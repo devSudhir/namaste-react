@@ -1,9 +1,57 @@
 import RestaurantCard from "./RestaurantCard";
-import restaurantList from "../utils/mockData";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const Body = () => {
-  const [listOfRestaurants, setListOfRestaurants] = useState(restaurantList);
+  const [listOfRestaurants, setListOfRestaurants] = useState([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    const data = await fetch(
+      "https://www.swiggy.com/dapi/restaurants/list/v5?lat=12.9452387&lng=77.7115841&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING"
+    );
+    const jsonData = await data.json();
+    console.log("jsondata", jsonData);
+
+    const uniqueRestaurants = [];
+    const seenIds = new Set();
+
+    // Now use uniqueRestaurants for rendering
+
+    jsonData.data.cards.forEach((cardObj) => {
+      // Find the restaurant data inside each card
+      const restaurant = cardObj.card?.card;
+      console.log("restaurant", restaurant);
+
+      console.log(
+        " restaurant?.gridElements?.restaurants",
+        restaurant?.gridElements?.infoWithStyle?.restaurants
+      );
+      const gridElementsInfos =
+        restaurant?.gridElements?.infoWithStyle?.restaurants;
+      if (gridElementsInfos && gridElementsInfos.length > 0) {
+        gridElementsInfos.forEach((gridElementsInfo) => {
+          if (!seenIds.has(gridElementsInfo?.info?.id)) {
+            uniqueRestaurants.push({
+              id: gridElementsInfo?.info?.id,
+              name: gridElementsInfo?.info?.name,
+              cuisine: gridElementsInfo?.info?.cuisines?.join(", "),
+              image: `https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,w_660/${gridElementsInfo?.info?.cloudinaryImageId}`,
+              rating: gridElementsInfo?.info?.avgRating,
+              reviewCount: gridElementsInfo?.info?.totalRatingsString,
+              address: `${gridElementsInfo?.info?.locality}, ${gridElementsInfo?.info?.areaName}`,
+              costForTwo: gridElementsInfo?.info?.costForTwo,
+            });
+            seenIds.add(gridElementsInfo?.info?.id);
+          }
+        });
+      }
+    });
+    setListOfRestaurants(uniqueRestaurants);
+    console.log("uniqueRestaurants", uniqueRestaurants);
+  };
   return (
     <div className="body">
       <div className="search"></div>
@@ -14,9 +62,7 @@ const Body = () => {
           onClick={() => {
             console.log("top rated button clicked");
             setListOfRestaurants(
-              listOfRestaurants.filter(
-                (res) => res.aggregateRating.ratingValue > 4
-              )
+              listOfRestaurants.filter((res) => res.rating > 4)
             );
           }}
         >
@@ -28,9 +74,7 @@ const Body = () => {
             console.log("Cost Low to High button clicked");
             setListOfRestaurants([
               ...listOfRestaurants.sort((a, b) => {
-                return (
-                  a.aggregateRating.ratingValue - b.aggregateRating.ratingValue
-                );
+                return a.rating - b.rating;
               }),
             ]);
           }}
@@ -43,9 +87,7 @@ const Body = () => {
             console.log("cost-high-to-low button clicked");
             setListOfRestaurants([
               ...listOfRestaurants.sort((a, b) => {
-                return (
-                  b.aggregateRating.ratingValue - a.aggregateRating.ratingValue
-                );
+                return b.rating - a.rating;
               }),
             ]);
           }}
@@ -58,13 +100,14 @@ const Body = () => {
         {listOfRestaurants.map((restaurant) => {
           return (
             <RestaurantCard
-              key={restaurant.name}
+              key={restaurant.id}
               resName={restaurant.name}
-              cuisine={restaurant.servesCuisine}
+              cuisine={restaurant.cuisine}
               image={restaurant.image}
-              ratingValue={restaurant.aggregateRating.ratingValue}
-              reviewCount={restaurant.aggregateRating.reviewCount}
-              address={restaurant.address.streetAddress}
+              ratingValue={restaurant.rating}
+              reviewCount={restaurant.reviewCount}
+              address={restaurant.address}
+              costForTwo={restaurant.costForTwo}
             />
           );
         })}

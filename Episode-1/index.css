@@ -85,9 +85,16 @@
 }
 
 /* Test field styles for restaurant card */
-.body .restaurant-container .res-card h3 {
+.body .restaurant-container .res-card h2 {
   margin: 8px 0 4px 0;
   font-size: 1.2rem;
+  font-weight: 600;
+  color: #2d3a4a;
+  text-align: center;
+}
+.body .restaurant-container .res-card h3 {
+  margin: 8px 0 4px 0;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #2d3a4a;
   text-align: center;
